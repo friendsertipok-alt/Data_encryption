@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui-dlp
+    ports:
+      - "3000:8080"
+    environment:
+      # Натравливаем WebUI на наш локальный DLP-шлюз (который работает на порту 8001)
+      - OPENAI_API_BASE_URL=http://host.docker.internal:8001/v1
+      # Токен-заглушка.
+      - OPENAI_API_KEY=dlp-proxy-key
+    volumes:
+      - open-webui-dlp-data:/app/backend/data
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  open-webui-dlp-data:

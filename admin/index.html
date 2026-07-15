@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM DLP Proxy - Панель управления</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --primary: #4ade80;
+            --primary-hover: #22c55e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(74, 222, 128, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 40px 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(to right, #f8fafc, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .token-cell {
+            font-family: monospace;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .dept-badge {
+            background: rgba(74, 222, 128, 0.1);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        button {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button.outline {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--panel-border);
+        }
+
+        button.outline:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--panel-border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+            min-height: 80px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 LLM DLP Proxy — Admin</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="outline" onclick="loadData()">Обновить</button>
+                <button onclick="saveData()">Сохранить изменения</button>
+            </div>
+        </header>
+
+        <div id="content" class="loading">Загрузка данных...</div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        async function loadData() {
+            document.getElementById('content').innerHTML = '<div class="loading">Загрузка данных...</div>';
+            try {
+                const res = await fetch('/admin/api/data');
+                currentData = await res.json();
+                renderUI();
+            } catch (e) {
+                document.getElementById('content').innerHTML = `<div class="loading" style="color:var(--danger)">Ошибка загрузки: ${e.message}</div>`;
+            }
+        }
+
+        async function saveData() {
+            const btn = document.querySelector('button[onclick="saveData()"]');
+            btn.textContent = "Сохранение...";
+            try {
+                await fetch('/admin/api/data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(currentData)
+                });
+                btn.textContent = "Сохранено!";
+                btn.style.background = "#38bdf8";
+                setTimeout(() => {
+                    btn.textContent = "Сохранить изменения";
+                    btn.style.background = "var(--primary)";
+                }, 2000);
+            } catch (e) {
+                alert("Ошибка сохранения: " + e.message);
+                btn.textContent = "Сохранить изменения";
+            }
+        }
+
+        function updatePrompt(deptId, value) {
+            if(currentData && currentData.departments[deptId]) {
+                currentData.departments[deptId].prompt = value;
+            }
+        }
+
+        function renderUI() {
+            if(!currentData) return;
+            
+            let html = '';
+
+            // 1. Статистика / Настройки (для примера)
+            html += `
+            <div class="glass-panel" style="display: flex; gap: 20px; align-items: center;">
+                <div>
+                    <h2 style="margin: 0; font-size: 16px; color: var(--text-muted)">DLP Engine</h2>
+                    <strong style="font-size: 24px; color: var(--primary)">АКТИВЕН</strong>
+                </div>
+                <div style="width: 1px; height: 40px; background: var(--panel-border);"></div>
+                <div>
+                    <h2 style="margin: 0; font-size: 16px; color: var(--text-muted)">Внешняя сеть (Target LLM)</h2>
+                    <strong style="font-size: 20px;">Claude (Anthropic)</strong>
+                </div>
+            </div>
+            `;
+
+            // 2. Пользователи
+            html += `
+            <div class="glass-panel">
+                <h2>👥 Пользователи и Доступ</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Сотрудник</th>
+                            <th>Отдел</th>
+                            <th>API Токен (указать в Open-WebUI)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            for (const [token, user] of Object.entries(currentData.users)) {
+                const deptName = currentData.departments[user.department]?.name || user.department;
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${user.name}</strong><br>
+                            <span style="color: var(--text-muted); font-size: 12px;">${user.email}</span>
+                        </td>
+                        <td><span class="dept-badge">${deptName}</span></td>
+                        <td><span class="token-cell">${token}</span></td>
+                    </tr>
+                `;
+            }
+            html += `</tbody></table></div>`;
+
+            // 3. Системные промпты по отделам
+            html += `
+            <div class="glass-panel">
+                <h2>🎭 Системные промпты по отделам</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                    Эти инструкции невидимо подмешиваются в начало каждого разговора. 
+                    Они задают контекст и роль для нейросети.
+                </p>
+            `;
+            
+            for (const [id, dept] of Object.entries(currentData.departments)) {
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <div class="flex-between">
+                            <strong style="color: var(--primary)">${dept.name}</strong>
+                        </div>
+                        <textarea onchange="updatePrompt('${id}', this.value)">${dept.prompt}</textarea>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        // Запуск
+        loadData();
+    </script>
+</body>
+</html>

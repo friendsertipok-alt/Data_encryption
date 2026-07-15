@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLP File Anonymizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>🛡️ DLP Защита Данных</h1>
+            <p>Безопасная обработка конфиденциальных файлов для нейросетей</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="anonymize">🔒 Анонимизация (Шаг 1)</button>
+            <button class="tab-btn" data-tab="deanonymize">🔓 Деанонимизация (Шаг 2)</button>
+        </div>
+
+        <div class="tab-content active" id="anonymize-tab">
+            <div class="instructions">
+                Загрузите оригинальный документ (.docx, .xlsx). Мы заменим ФИО, карты и другие данные на фейковые.
+            </div>
+            <div class="drop-zone" id="drop-anonymize">
+                <span class="icon">📁</span>
+                <p>Перетащите файл сюда или нажмите для выбора</p>
+                <input type="file" id="file-anonymize" accept=".docx, .xlsx, .pptx" hidden>
+            </div>
+            <div class="file-info" id="info-anonymize"></div>
+            <button class="action-btn" id="btn-anonymize" disabled>Обезличить файл</button>
+            <div class="loader" id="loader-anonymize">Обработка...</div>
+        </div>
+
+        <div class="tab-content" id="deanonymize-tab">
+            <div class="instructions">
+                Загрузите документ, который вернул ИИ. Мы восстановим реальные данные, используя сохраненный словарь сессии.
+            </div>
+            
+            <div class="session-input-group">
+                <label for="session-id">Выберите файл из истории:</label>
+                <select id="session-select" class="session-select">
+                    <option value="">Загрузка...</option>
+                </select>
+                <input type="hidden" id="session-id">
+            </div>
+
+            <div class="drop-zone" id="drop-deanonymize">
+                <span class="icon">📁</span>
+                <p>Перетащите файл от ИИ сюда или нажмите для выбора</p>
+                <input type="file" id="file-deanonymize" accept=".docx, .xlsx, .pptx" hidden>
+            </div>
+            <div class="file-info" id="info-deanonymize"></div>
+            <button class="action-btn" id="btn-deanonymize" disabled>Восстановить данные</button>
+            <div class="loader" id="loader-deanonymize">Восстановление...</div>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

@@ -19,7 +19,7 @@ def _save_sessions(data):
     with open(SESSION_STORE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def create_session(entity_map, filename="unknown", user_token="default"):
+def create_session(entity_map, filename="unknown", user_token="default", lang="ru"):
     """Создает новую сессию для пользователя и сохраняет маппинг"""
     sessions = _load_sessions()
     session_id = str(uuid.uuid4())
@@ -28,6 +28,8 @@ def create_session(entity_map, filename="unknown", user_token="default"):
         "user_token": user_token,
         "filename": filename,
         "entity_map": entity_map,
+        "entities_count": len(entity_map),
+        "lang": lang,
         "created_at": datetime.now().isoformat()
     }
     

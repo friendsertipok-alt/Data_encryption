@@ -1,21 +1,19 @@
 import os
-import httpx
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form, Response
+import urllib.parse
+from fastapi import FastAPI, UploadFile, File, Form, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
-from anonymizer import DlpSession
-from user_profiles import get_all_data, save_all_data, is_dlp_enabled
-from audit_logger import log_audit_event
+from core.dependencies import detector
 from session_store import create_session, get_session_map, get_user_sessions
-from file_parsers import anonymize_docx, deanonymize_docx, anonymize_xlsx, deanonymize_xlsx, anonymize_pptx, deanonymize_pptx
-import urllib.parse
+from parsers.office import OfficeParser
+from parsers.plain import PlainParser
+from parsers.pdf import PdfParser
+from api_proxy import proxy_router
 
-app = FastAPI(title="DLP Anonymizer App")
+app = FastAPI(title="Universal DLP Gateway")
 
-# Разрешаем CORS для локальной разработки (Admin Panel)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,61 +22,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================================
-# ЭНДПОИНТЫ ADMIN API — управление из панели администратора
-# ============================================================
-
-@app.get("/admin/api/data")
-async def admin_get_data():
-    """Отдает все данные (пользователи, промпты, настройки) для панели."""
-    return get_all_data()
-
-@app.post("/admin/api/data")
-async def admin_save_data(request: Request):
-    """Сохраняет все данные из панели администратора."""
-    data = await request.json()
-    save_all_data(data)
-    return {"status": "ok", "message": "Данные сохранены"}
-
-# ============================================================
-# ОСНОВНЫЕ ЭНДПОИНТЫ ДЛЯ РАБОТЫ С ФАЙЛАМИ
-# ============================================================
+# Подключаем API Proxy
+app.include_router(proxy_router)
 
 @app.post("/api/anonymize/file")
 async def anonymize_file(
-    file: UploadFile = File(...),
-    user_token: str = Form("default")
+    file: UploadFile = File(...)
 ):
-    if not is_dlp_enabled():
-        return JSONResponse(status_code=400, content={"error": "DLP отключен в настройках"})
-        
     filename = file.filename.lower()
     file_bytes = await file.read()
     
-    session = DlpSession()
+    entity_map = {}
     anonymized_bytes = b""
     
+    # Замыкание для передачи в парсеры (используем auto)
+    def anonymize_func(text: str) -> str:
+        return detector.analyze_and_anonymize(text, entity_map, "auto")
+        
     try:
         if filename.endswith(".docx"):
-            anonymized_bytes = anonymize_docx(file_bytes, session.custom_anonymize)
+            anonymized_bytes = OfficeParser.anonymize_docx(file_bytes, anonymize_func)
         elif filename.endswith(".xlsx"):
-            anonymized_bytes = anonymize_xlsx(
-                file_bytes, 
-                anonymize_func=session.custom_anonymize,
-                context_anonymize_func=session.anonymize_context_number
-            )
+            anonymized_bytes = OfficeParser.anonymize_xlsx(file_bytes, anonymize_func, context_anonymize_func=anonymize_func)
         elif filename.endswith(".pptx"):
-            anonymized_bytes = anonymize_pptx(file_bytes, session.custom_anonymize)
+            anonymized_bytes = OfficeParser.anonymize_pptx(file_bytes, anonymize_func)
+        elif filename.endswith(".pdf"):
+            anonymized_bytes = PdfParser.anonymize_pdf(file_bytes, anonymize_func, entity_map)
+        elif filename.endswith(".txt"):
+            anonymized_bytes = PlainParser.anonymize_txt(file_bytes, anonymize_func)
+        elif filename.endswith(".csv"):
+            anonymized_bytes = PlainParser.anonymize_csv(file_bytes, anonymize_func)
+        elif filename.endswith(".json"):
+            anonymized_bytes = PlainParser.anonymize_json(file_bytes, anonymize_func)
+        elif filename.endswith(".xml"):
+            anonymized_bytes = PlainParser.anonymize_xml(file_bytes, anonymize_func)
         else:
-            return JSONResponse(status_code=400, content={"error": "Поддерживаются только форматы .docx, .xlsx и .pptx"})
+            return JSONResponse(status_code=400, content={"error": f"Формат {filename.split('.')[-1]} пока не поддерживается"})
             
-        # Сохраняем сессию с именем файла
-        session_id = create_session(session.entity_map, file.filename, user_token)
+        session_id = create_session(entity_map, file.filename, "default", "auto")
+        encoded_filename = urllib.parse.quote(f"safe_{file.filename}")
         
-        # Кодируем имя файла для безопасной передачи в заголовке
-        encoded_filename = urllib.parse.quote(f"anonymized_{file.filename}")
-        
-        # Возвращаем файл и session_id в заголовках
         return Response(
             content=anonymized_bytes,
             media_type="application/octet-stream",
@@ -90,11 +73,6 @@ async def anonymize_file(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Ошибка обработки: {str(e)}"})
 
-@app.get("/api/sessions")
-async def get_sessions(user_token: str = "default"):
-    """Возвращает историю сессий (файлов) пользователя"""
-    sessions = get_user_sessions(user_token)
-    return JSONResponse(content={"sessions": sessions})
 
 @app.post("/api/deanonymize/file")
 async def deanonymize_file(
@@ -103,28 +81,36 @@ async def deanonymize_file(
 ):
     entity_map = get_session_map(session_id)
     if entity_map is None:
-        return JSONResponse(status_code=404, content={"error": "Сессия не найдена. Возможно она устарела."})
+        return JSONResponse(status_code=404, content={"error": "Сессия не найдена"})
         
-    session = DlpSession()
-    session.entity_map = entity_map
-    
     filename = file.filename.lower()
     file_bytes = await file.read()
     deanonymized_bytes = b""
     
+    def deanonymize_func(text: str) -> str:
+        return detector.deanonymize(text, entity_map)
+        
     try:
         if filename.endswith(".docx"):
-            deanonymized_bytes = deanonymize_docx(file_bytes, session.deanonymize)
+            deanonymized_bytes = OfficeParser.deanonymize_docx(file_bytes, deanonymize_func)
         elif filename.endswith(".xlsx"):
-            deanonymized_bytes = deanonymize_xlsx(file_bytes, session.deanonymize)
+            deanonymized_bytes = OfficeParser.deanonymize_xlsx(file_bytes, deanonymize_func)
         elif filename.endswith(".pptx"):
-            deanonymized_bytes = deanonymize_pptx(file_bytes, session.deanonymize)
+            deanonymized_bytes = OfficeParser.deanonymize_pptx(file_bytes, deanonymize_func)
+        elif filename.endswith(".pdf"):
+            deanonymized_bytes = PdfParser.deanonymize_pdf(file_bytes, entity_map)
+        elif filename.endswith(".txt"):
+            deanonymized_bytes = PlainParser.deanonymize_txt(file_bytes, deanonymize_func)
+        elif filename.endswith(".csv"):
+            deanonymized_bytes = PlainParser.deanonymize_csv(file_bytes, deanonymize_func)
+        elif filename.endswith(".json"):
+            deanonymized_bytes = PlainParser.deanonymize_json(file_bytes, deanonymize_func)
+        elif filename.endswith(".xml"):
+            deanonymized_bytes = PlainParser.deanonymize_xml(file_bytes, deanonymize_func)
         else:
-            return JSONResponse(status_code=400, content={"error": "Поддерживаются только форматы .docx, .xlsx и .pptx"})
+            return JSONResponse(status_code=400, content={"error": "Формат не поддерживается"})
             
-        # Кодируем имя файла для безопасной передачи в заголовке
         encoded_filename = urllib.parse.quote(f"restored_{file.filename}")
-            
         return Response(
             content=deanonymized_bytes,
             media_type="application/octet-stream",
@@ -135,7 +121,11 @@ async def deanonymize_file(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Ошибка обработки: {str(e)}"})
 
-# Подключаем статические файлы для Frontend интерфейса
+@app.get("/api/sessions")
+async def get_sessions():
+    sessions = get_user_sessions("default")
+    return JSONResponse(content={"sessions": sessions})
+
 if os.path.exists("frontend"):
     app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
     

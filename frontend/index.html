@@ -3,58 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLP File Anonymizer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>DLP Gateway - Анонимизатор Данных</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
+    <div class="container">
         <header>
-            <h1>🛡️ DLP Защита Данных</h1>
-            <p>Безопасная обработка конфиденциальных файлов для нейросетей</p>
+            <div class="logo-container">
+                <div class="shield-icon">🛡️</div>
+                <h1>DLP Gateway</h1>
+            </div>
+            <p class="subtitle">Безопасная передача конфиденциальных данных в LLM</p>
         </header>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="anonymize">🔒 Анонимизация (Шаг 1)</button>
-            <button class="tab-btn" data-tab="deanonymize">🔓 Деанонимизация (Шаг 2)</button>
-        </div>
-
-        <div class="tab-content active" id="anonymize-tab">
-            <div class="instructions">
-                Загрузите оригинальный документ (.docx, .xlsx). Мы заменим ФИО, карты и другие данные на фейковые.
-            </div>
-            <div class="drop-zone" id="drop-anonymize">
-                <span class="icon">📁</span>
-                <p>Перетащите файл сюда или нажмите для выбора</p>
-                <input type="file" id="file-anonymize" accept=".docx, .xlsx, .pptx" hidden>
-            </div>
-            <div class="file-info" id="info-anonymize"></div>
-            <button class="action-btn" id="btn-anonymize" disabled>Обезличить файл</button>
-            <div class="loader" id="loader-anonymize">Обработка...</div>
-        </div>
-
-        <div class="tab-content" id="deanonymize-tab">
-            <div class="instructions">
-                Загрузите документ, который вернул ИИ. Мы восстановим реальные данные, используя сохраненный словарь сессии.
-            </div>
-            
-            <div class="session-input-group">
-                <label for="session-id">Выберите файл из истории:</label>
-                <select id="session-select" class="session-select">
-                    <option value="">Загрузка...</option>
-                </select>
-                <input type="hidden" id="session-id">
+        <main>
+            <div class="tabs">
+                <button class="tab-btn active" data-target="anonymize-tab">Защитить файл (Анонимизация)</button>
+                <button class="tab-btn" data-target="deanonymize-tab">Восстановить (Деанонимизация)</button>
             </div>
 
-            <div class="drop-zone" id="drop-deanonymize">
-                <span class="icon">📁</span>
-                <p>Перетащите файл от ИИ сюда или нажмите для выбора</p>
-                <input type="file" id="file-deanonymize" accept=".docx, .xlsx, .pptx" hidden>
-            </div>
-            <div class="file-info" id="info-deanonymize"></div>
-            <button class="action-btn" id="btn-deanonymize" disabled>Восстановить данные</button>
-            <div class="loader" id="loader-deanonymize">Восстановление...</div>
-        </div>
+            <section id="anonymize-tab" class="tab-content active">
+                <div class="card">
+                    <h2>Загрузите файл для защиты</h2>
+                    <p class="desc">Система найдёт и заменит ФИО, ИНН, номера карт, телефоны и другие данные на реалистичные фейки.</p>
+                    
+                    <form id="anonymize-form">
+                        <div class="form-group hidden">
+                            <!-- Language auto-detected now -->
+                        </div>
+
+                        <div class="file-drop-area" id="drop-area-anon">
+                            <span class="file-msg">Перетащите файл сюда или нажмите для выбора</span>
+                            <input class="file-input" type="file" id="file-anon" required>
+                        </div>
+                        <div id="file-name-anon" class="file-name-display"></div>
+
+                        <button type="submit" class="btn primary-btn" id="btn-anon">
+                            <span class="btn-text">Защитить и Скачать</span>
+                            <div class="spinner hidden"></div>
+                        </button>
+                    </form>
+                    
+                    <div id="anon-result" class="result-box hidden">
+                        <h3>✅ Файл успешно обработан!</h3>
+                        <p>ID Сессии: <strong id="session-id-display"></strong></p>
+                        <p class="warning-text">⚠️ Обязательно сохраните этот ID, он нужен для восстановления оригинального файла!</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="deanonymize-tab" class="tab-content">
+                <div class="card">
+                    <h2>Восстановление оригинальных данных</h2>
+                    <p class="desc">Загрузите изменённый файл и введите ID сессии, чтобы вернуть настоящие данные на свои места.</p>
+                    
+                    <form id="deanonymize-form">
+                        <div class="form-group">
+                            <label for="session-id-input">ID Сессии:</label>
+                            <input type="text" id="session-id-input" placeholder="Например: 550e8400-e29b-41d4-a716-446655440000" required>
+                        </div>
+
+                        <div class="file-drop-area" id="drop-area-deanon">
+                            <span class="file-msg">Перетащите защищенный файл сюда или нажмите</span>
+                            <input class="file-input" type="file" id="file-deanon" required>
+                        </div>
+                        <div id="file-name-deanon" class="file-name-display"></div>
+
+                        <button type="submit" class="btn secondary-btn" id="btn-deanon">
+                            <span class="btn-text">Восстановить Оригинал</span>
+                            <div class="spinner hidden"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
     </div>
     
     <script src="app.js"></script>

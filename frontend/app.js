@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Tabs Logic ---
+    // Табы
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -9,118 +9,98 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContents.forEach(c => c.classList.remove('active'));
             
             btn.classList.add('active');
-            document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
+            document.getElementById(btn.dataset.target).classList.add('active');
         });
     });
 
-    // --- Drag & Drop Logic Helper ---
-    function setupDropZone(dropZoneId, fileInputId, infoId, btnId) {
-        const dropZone = document.getElementById(dropZoneId);
-        const fileInput = document.getElementById(fileInputId);
-        const info = document.getElementById(infoId);
-        const btn = document.getElementById(btnId);
-        let currentFile = null;
+    // Обработка файлов (Анонимизация)
+    const fileAnon = document.getElementById('file-anon');
+    const dropAreaAnon = document.getElementById('drop-area-anon');
+    const fileNameAnon = document.getElementById('file-name-anon');
 
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                handleFileSelect();
-            }
-        });
-
-        fileInput.addEventListener('change', handleFileSelect);
-
-        function handleFileSelect() {
-            if (fileInput.files.length > 0) {
-                currentFile = fileInput.files[0];
-                info.textContent = `Выбран файл: ${currentFile.name}`;
-                btn.disabled = false;
-            } else {
-                currentFile = null;
-                info.textContent = '';
-                btn.disabled = true;
-            }
+    fileAnon.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileNameAnon.textContent = `Выбран файл: ${e.target.files[0].name}`;
         }
-
-        return () => currentFile;
-    }
-
-    const getAnonymizeFile = setupDropZone('drop-anonymize', 'file-anonymize', 'info-anonymize', 'btn-anonymize');
-    const getDeanonymizeFile = setupDropZone('drop-deanonymize', 'file-deanonymize', 'info-deanonymize', 'btn-deanonymize');
-
-    // --- Управление Сессиями ---
-    async function loadSessions() {
-        const select = document.getElementById('session-select');
-        try {
-            const res = await fetch('/api/sessions');
-            const data = await res.json();
-            
-            select.innerHTML = ''; // Очистка
-            
-            if (!data.sessions || data.sessions.length === 0) {
-                select.innerHTML = '<option value="">Нет сохраненных сессий</option>';
-                return;
-            }
-            
-            // Добавляем пустую опцию (placeholder)
-            const defaultOpt = document.createElement('option');
-            defaultOpt.value = "";
-            defaultOpt.textContent = "-- Выберите файл --";
-            select.appendChild(defaultOpt);
-
-            data.sessions.forEach(session => {
-                const opt = document.createElement('option');
-                opt.value = session.session_id;
-                const date = new Date(session.created_at).toLocaleString('ru-RU', {
-                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-                });
-                opt.textContent = `${session.filename} (${date})`;
-                select.appendChild(opt);
-            });
-        } catch (e) {
-            console.error("Ошибка загрузки сессий", e);
-            select.innerHTML = '<option value="">Ошибка загрузки</option>';
-        }
-    }
-
-    // Обработчик выбора в селекте
-    document.getElementById('session-select').addEventListener('change', (e) => {
-        document.getElementById('session-id').value = e.target.value;
     });
 
-    // Загружаем сессии при старте и при переключении на вкладку
-    loadSessions();
-    document.querySelector('[data-tab="deanonymize"]').addEventListener('click', loadSessions);
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropAreaAnon.addEventListener(eventName, preventDefaults, false);
+    });
 
-    // --- API Calls ---
-    
-    // 1. Анонимизация
-    document.getElementById('btn-anonymize').addEventListener('click', async () => {
-        const file = getAnonymizeFile();
-        if (!file) return;
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
-        const btn = document.getElementById('btn-anonymize');
-        const loader = document.getElementById('loader-anonymize');
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropAreaAnon.addEventListener(eventName, () => dropAreaAnon.classList.add('drag-over'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropAreaAnon.addEventListener(eventName, () => dropAreaAnon.classList.remove('drag-over'), false);
+    });
+
+    dropAreaAnon.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        fileAnon.files = files;
+        if (files.length > 0) {
+            fileNameAnon.textContent = `Выбран файл: ${files[0].name}`;
+        }
+    });
+
+    // Обработка файлов (Деанонимизация)
+    const fileDeanon = document.getElementById('file-deanon');
+    const dropAreaDeanon = document.getElementById('drop-area-deanon');
+    const fileNameDeanon = document.getElementById('file-name-deanon');
+
+    fileDeanon.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileNameDeanon.textContent = `Выбран файл: ${e.target.files[0].name}`;
+        }
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropAreaDeanon.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropAreaDeanon.addEventListener(eventName, () => dropAreaDeanon.classList.add('drag-over'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropAreaDeanon.addEventListener(eventName, () => dropAreaDeanon.classList.remove('drag-over'), false);
+    });
+
+    dropAreaDeanon.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        fileDeanon.files = files;
+        if (files.length > 0) {
+            fileNameDeanon.textContent = `Выбран файл: ${files[0].name}`;
+        }
+    });
+
+    // Отправка формы Анонимизации
+    const formAnon = document.getElementById('anonymize-form');
+    const btnAnon = document.getElementById('btn-anon');
+    const resultAnon = document.getElementById('anon-result');
+    const sessionIdDisplay = document.getElementById('session-id-display');
+
+    formAnon.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        btn.style.display = 'none';
-        loader.style.display = 'block';
+        if (!fileAnon.files || fileAnon.files.length === 0) {
+            alert('Пожалуйста, выберите файл');
+            return;
+        }
 
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('user_token', 'default_user'); // Можно брать из авторизации, если она есть
+        formData.append('file', fileAnon.files[0]);
+
+        setLoading(btnAnon, true);
+        resultAnon.classList.add('hidden');
 
         try {
             const response = await fetch('/api/anonymize/file', {
@@ -129,60 +109,65 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Ошибка сервера');
+                const error = await response.json();
+                throw new Error(error.error || 'Ошибка при обработке файла');
             }
 
-            // Получаем Session ID из заголовков
             const sessionId = response.headers.get('X-Session-ID');
-            if(sessionId) {
-                // Скачиваем файл
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = `anonymized_${file.name}`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                
-                // Переключаем юзера на вкладку деанонимизации и обновляем список
-                document.querySelector('[data-tab="deanonymize"]').click();
-                
-                setTimeout(() => {
-                    document.getElementById('session-select').value = sessionId;
-                    document.getElementById('session-id').value = sessionId;
-                }, 500); // Небольшая задержка, чтобы список успел загрузиться
+            if (sessionId) {
+                sessionIdDisplay.textContent = sessionId;
+                resultAnon.classList.remove('hidden');
+                // Предзаполняем поле восстановления для удобства
+                document.getElementById('session-id-input').value = sessionId;
             }
-            
+
+            // Скачивание файла
+            let filename = 'safe_file';
+            const disposition = response.headers.get('Content-Disposition');
+            if (disposition && disposition.indexOf('filename*=utf-8\'\'') !== -1) {
+                filename = decodeURIComponent(disposition.split("filename*=utf-8''")[1]);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
         } catch (error) {
-            alert('Ошибка: ' + error.message);
+            alert(error.message);
         } finally {
-            btn.style.display = 'block';
-            loader.style.display = 'none';
+            setLoading(btnAnon, false);
         }
     });
 
-    // 2. Деанонимизация
-    document.getElementById('btn-deanonymize').addEventListener('click', async () => {
-        const file = getDeanonymizeFile();
-        const sessionId = document.getElementById('session-id').value.trim();
+    // Отправка формы Деанонимизации
+    const formDeanon = document.getElementById('deanonymize-form');
+    const btnDeanon = document.getElementById('btn-deanon');
 
-        if (!file) return;
+    formDeanon.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const sessionId = document.getElementById('session-id-input').value.trim();
         if (!sessionId) {
-            alert('Пожалуйста, введите ID сессии');
+            alert('Введите ID сессии');
             return;
         }
 
-        const btn = document.getElementById('btn-deanonymize');
-        const loader = document.getElementById('loader-deanonymize');
-        
-        btn.style.display = 'none';
-        loader.style.display = 'block';
+        if (!fileDeanon.files || fileDeanon.files.length === 0) {
+            alert('Пожалуйста, выберите файл');
+            return;
+        }
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileDeanon.files[0]);
         formData.append('session_id', sessionId);
+
+        setLoading(btnDeanon, true);
 
         try {
             const response = await fetch('/api/deanonymize/file', {
@@ -191,25 +176,46 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Ошибка сервера');
+                const error = await response.json();
+                throw new Error(error.error || 'Ошибка при восстановлении файла');
             }
 
-            // Скачиваем восстановленный файл
+            // Скачивание файла
+            let filename = 'restored_file';
+            const disposition = response.headers.get('Content-Disposition');
+            if (disposition && disposition.indexOf('filename*=utf-8\'\'') !== -1) {
+                filename = decodeURIComponent(disposition.split("filename*=utf-8''")[1]);
+            }
+
             const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = `restored_${file.name}`;
+            a.href = url;
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            
+            window.URL.revokeObjectURL(url);
+
         } catch (error) {
-            alert('Ошибка: ' + error.message);
+            alert(error.message);
         } finally {
-            btn.style.display = 'block';
-            loader.style.display = 'none';
+            setLoading(btnDeanon, false);
         }
     });
+
+    function setLoading(btn, isLoading) {
+        const text = btn.querySelector('.btn-text');
+        const spinner = btn.querySelector('.spinner');
+        
+        if (isLoading) {
+            text.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            btn.disabled = true;
+        } else {
+            text.classList.remove('hidden');
+            spinner.classList.add('hidden');
+            btn.disabled = false;
+        }
+    }
 });

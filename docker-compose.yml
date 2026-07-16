@@ -1,21 +1,33 @@
 version: '3.8'
 
 services:
+  dlp-gateway:
+    build: .
+    container_name: dlp-gateway
+    ports:
+      - "8001:8001"
+    environment:
+      - UPSTREAM_URL=https://api.openai.com/v1/chat/completions
+      - UPSTREAM_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+    restart: always
+
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui-dlp
     ports:
       - "3000:8080"
     environment:
-      # Натравливаем WebUI на наш локальный DLP-шлюз (который работает на порту 8001)
-      - OPENAI_API_BASE_URL=http://host.docker.internal:8001/v1
-      # Токен-заглушка.
+      # Натравливаем WebUI на наш локальный DLP-шлюз (внутри Docker сети)
+      - OPENAI_API_BASE_URL=http://dlp-gateway:8001/v1
+      # Токен-заглушка
       - OPENAI_API_KEY=dlp-proxy-key
     volumes:
       - open-webui-dlp-data:/app/backend/data
     restart: always
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - dlp-gateway
 
 volumes:
   open-webui-dlp-data:

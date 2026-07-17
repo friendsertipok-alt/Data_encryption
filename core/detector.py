@@ -66,15 +66,15 @@ class DlpDetector:
             return 'ru'
         return 'en'
 
-    def analyze_and_anonymize(self, text: str, entity_map: Dict[str, str], lang: str = 'auto') -> str:
+    def analyze_and_anonymize(self, text: str, entity_map: Dict[str, str], lang: str = 'auto', mode: str = 'fake') -> str:
         if not text.strip():
             return text
             
         if lang == 'auto':
             lang = self.detect_language(text)
             
-        # 1. Проверка кэша
-        cached = self.cache.get(text)
+        # 1. Проверка кэша (добавляем mode в ключ)
+        cached = self.cache.get((text, mode))
         if cached is not None:
             anonymized_text, cached_map = cached
             entity_map.update(cached_map)
@@ -99,9 +99,15 @@ class DlpDetector:
             # Проверка, есть ли уже этот оригинал в мапе (для Canonical Mapping)
             token = self._get_existing_token(original_value, entity_map)
             if not token:
-                token = self.faker_engine.generate_fake(res.entity_type, original_value)
-                entity_map[token] = original_value
-                local_entity_map[token] = original_value
+                if mode == 'tags':
+                    count = sum(1 for k in entity_map.keys() if k.startswith(f"<{res.entity_type}_")) + 1
+                    token = f"<{res.entity_type}_{count}>"
+                    entity_map[token] = original_value
+                    local_entity_map[token] = original_value
+                else:
+                    token = self.faker_engine.generate_fake(res.entity_type, original_value)
+                    entity_map[token] = original_value
+                    local_entity_map[token] = original_value
                 
             anonymized_text = anonymized_text[:res.start] + token + anonymized_text[res.end:]
             
@@ -139,17 +145,23 @@ class DlpDetector:
             token = self._get_existing_token(original_value, entity_map)
             
             if not token:
-                if res.entity_type == "PERSON" and lang == 'ru':
-                    token = self._handle_russian_person(original_value, entity_map, local_entity_map)
-                else:
-                    token = self.faker_engine.generate_fake(res.entity_type, original_value)
+                if mode == 'tags':
+                    count = sum(1 for k in entity_map.keys() if k.startswith(f"<{res.entity_type}_")) + 1
+                    token = f"<{res.entity_type}_{count}>"
                     entity_map[token] = original_value
                     local_entity_map[token] = original_value
+                else:
+                    if res.entity_type == "PERSON" and lang == 'ru':
+                        token = self._handle_russian_person(original_value, entity_map, local_entity_map)
+                    else:
+                        token = self.faker_engine.generate_fake(res.entity_type, original_value)
+                        entity_map[token] = original_value
+                        local_entity_map[token] = original_value
                     
             anonymized_text = anonymized_text[:res.start] + token + anonymized_text[res.end:]
             
         # Сохраняем в кэш
-        self.cache.put(text, (anonymized_text, local_entity_map))
+        self.cache.put((text, mode), (anonymized_text, local_entity_map))
         return anonymized_text
         
     def _get_existing_token(self, original_value: str, entity_map: Dict[str, str]) -> str | None:

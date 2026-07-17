@@ -1,7 +1,8 @@
 import os
 import urllib.parse
-from fastapi import FastAPI, UploadFile, File, Form, Response
+from fastapi import FastAPI, UploadFile, File, Form, Response, Depends, HTTPException, status, Security
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -25,9 +26,24 @@ app.add_middleware(
 # Подключаем API Proxy
 app.include_router(proxy_router)
 
+API_KEY_NAME = "X-API-Key"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+VALID_API_KEYS = {"test_key_123"}
+
+async def get_api_key(api_key_header: str = Security(api_key_header)):
+    if not api_key_header or api_key_header not in VALID_API_KEYS:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key"
+        )
+    return api_key_header
+
 @app.post("/api/anonymize/file")
 async def anonymize_file(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    mode: str = Form("fake"),
+    api_key: str = Depends(get_api_key)
 ):
     filename = file.filename.lower()
     file_bytes = await file.read()
@@ -37,7 +53,7 @@ async def anonymize_file(
     
     # Замыкание для передачи в парсеры (используем auto)
     def anonymize_func(text: str) -> str:
-        return detector.analyze_and_anonymize(text, entity_map, "auto")
+        return detector.analyze_and_anonymize(text, entity_map, "auto", mode=mode)
         
     try:
         if filename.endswith(".docx"):
@@ -77,7 +93,8 @@ async def anonymize_file(
 @app.post("/api/deanonymize/file")
 async def deanonymize_file(
     file: UploadFile = File(...),
-    session_id: str = Form(...)
+    session_id: str = Form(...),
+    api_key: str = Depends(get_api_key)
 ):
     entity_map = get_session_map(session_id)
     if entity_map is None:

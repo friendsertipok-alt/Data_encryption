@@ -15,8 +15,11 @@
                 <h1>DLP Gateway</h1>
             </div>
             <p class="subtitle">Безопасная передача конфиденциальных данных в LLM</p>
+            <div class="form-group" style="margin-top: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                <input type="text" id="api-key-input" value="test_key_123" placeholder="Ваш API Ключ (по умолчанию test_key_123)" required>
+            </div>
         </header>
-
+        
         <main>
             <div class="tabs">
                 <button class="tab-btn active" data-target="anonymize-tab">Защитить файл (Анонимизация)</button>
@@ -29,8 +32,12 @@
                     <p class="desc">Система найдёт и заменит ФИО, ИНН, номера карт, телефоны и другие данные на реалистичные фейки.</p>
                     
                     <form id="anonymize-form">
-                        <div class="form-group hidden">
-                            <!-- Language auto-detected now -->
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem;">Режим обработки:</label>
+                            <div style="display: flex; gap: 1rem; justify-content: center;">
+                                <label><input type="radio" name="mode" value="fake" checked> Реалистичные Фейки</label>
+                                <label><input type="radio" name="mode" value="tags"> Теги (&lt;PERSON_1&gt;)</label>
+                            </div>
                         </div>
 
                         <div class="file-drop-area" id="drop-area-anon">

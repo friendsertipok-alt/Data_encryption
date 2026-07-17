@@ -96,8 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const apiKey = document.getElementById('api-key-input').value.trim();
+        if (!apiKey) {
+            alert('Введите API Ключ');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('file', fileAnon.files[0]);
+        formData.append('mode', document.querySelector('input[name="mode"]:checked').value);
 
         setLoading(btnAnon, true);
         resultAnon.classList.add('hidden');
@@ -105,6 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/anonymize/file', {
                 method: 'POST',
+                headers: {
+                    'X-API-Key': apiKey
+                },
                 body: formData
             });
 
@@ -163,6 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const apiKey = document.getElementById('api-key-input').value.trim();
+        if (!apiKey) {
+            alert('Введите API Ключ');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('file', fileDeanon.files[0]);
         formData.append('session_id', sessionId);
@@ -172,6 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/deanonymize/file', {
                 method: 'POST',
+                headers: {
+                    'X-API-Key': apiKey
+                },
                 body: formData
             });
 

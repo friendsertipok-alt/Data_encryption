@@ -76,9 +76,12 @@ class DlpDetector:
         # 1. Проверка кэша
         cached = self.cache.get(text)
         if cached is not None:
-            return cached
+            anonymized_text, cached_map = cached
+            entity_map.update(cached_map)
+            return anonymized_text
             
         anonymized_text = text
+        local_entity_map = {}
         
         # --- PASS 1: REGEX ---
         regex_results = self.regex_analyzer.analyze(
@@ -98,6 +101,7 @@ class DlpDetector:
             if not token:
                 token = self.faker_engine.generate_fake(res.entity_type, original_value)
                 entity_map[token] = original_value
+                local_entity_map[token] = original_value
                 
             anonymized_text = anonymized_text[:res.start] + token + anonymized_text[res.end:]
             
@@ -136,15 +140,16 @@ class DlpDetector:
             
             if not token:
                 if res.entity_type == "PERSON" and lang == 'ru':
-                    token = self._handle_russian_person(original_value, entity_map)
+                    token = self._handle_russian_person(original_value, entity_map, local_entity_map)
                 else:
                     token = self.faker_engine.generate_fake(res.entity_type, original_value)
                     entity_map[token] = original_value
+                    local_entity_map[token] = original_value
                     
             anonymized_text = anonymized_text[:res.start] + token + anonymized_text[res.end:]
             
         # Сохраняем в кэш
-        self.cache.put(text, anonymized_text)
+        self.cache.put(text, (anonymized_text, local_entity_map))
         return anonymized_text
         
     def _get_existing_token(self, original_value: str, entity_map: Dict[str, str]) -> str | None:
@@ -156,8 +161,8 @@ class DlpDetector:
                 return token
         return None
         
-    def _handle_russian_person(self, original_value: str, entity_map: Dict[str, str]) -> str:
-        """Склоняет русское имя по падежам и заполняет entity_map"""
+    def _handle_russian_person(self, original_value: str, entity_map: Dict[str, str], local_entity_map: Dict[str, str]) -> str:
+        """Склоняет русское имя по падежам и заполняет entity_map и local_entity_map"""
         original_words = original_value.split()
         
         base_orig_words = []
@@ -178,16 +183,19 @@ class DlpDetector:
             inf_orig, inf_fake, inf_orig_words, inf_fake_words = self.faker_engine.morph_russian_name(original_words, fake_words, case)
             
             entity_map[inf_fake] = inf_orig
+            local_entity_map[inf_fake] = inf_orig
             if len(inf_fake_words) == len(inf_orig_words):
                 for fw, ow in zip(inf_fake_words, inf_orig_words):
                     if len(fw) > 3: 
                         entity_map[fw] = ow
+                        local_entity_map[fw] = ow
                         
             if inf_orig.lower() == original_value.lower():
                 matched_fake_token = inf_fake
                 
         token = matched_fake_token if matched_fake_token else fake_base
         entity_map[token] = original_value
+        local_entity_map[token] = original_value
         return token
 
     def deanonymize(self, text: str, entity_map: Dict[str, str]) -> str:

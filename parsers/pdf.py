@@ -13,6 +13,17 @@ class PdfParser:
         for page in doc:
             text = page.get_text("text")
             if not text.strip():
+                # Страница без текстового слоя (скан) — рендерим в картинку и применяем OCR
+                try:
+                    pix = page.get_pixmap(dpi=150)
+                    img_bytes = pix.tobytes("png")
+                    from parsers.image import ImageParser
+                    anon_img_bytes = ImageParser.anonymize_image(img_bytes, anonymize_func, entity_map)
+                    img_doc = fitz.open(stream=anon_img_bytes, filetype="png")
+                    img_rect = page.rect
+                    page.insert_image(img_rect, stream=anon_img_bytes)
+                except Exception:
+                    pass
                 continue
                 
             # Прогоняем текст через функцию анонимизации, 

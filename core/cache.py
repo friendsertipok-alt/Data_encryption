@@ -1,5 +1,6 @@
 import hashlib
 from collections import OrderedDict
+from typing import Any
 
 class LRUCache:
     """
@@ -10,19 +11,23 @@ class LRUCache:
         self.capacity = capacity
         self.cache: OrderedDict[str, str] = OrderedDict()
         
-    def _hash(self, text: str) -> str:
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    def _hash(self, key: Any) -> str:
+        if isinstance(key, tuple):
+            key_str = str(key)
+        else:
+            key_str = str(key)
+        return hashlib.sha256(key_str.encode("utf-8")).hexdigest()
 
-    def get(self, text: str) -> str | None:
-        key = self._hash(text)
-        if key in self.cache:
-            self.cache.move_to_end(key)
-            return self.cache[key]
+    def get(self, key: Any) -> Any | None:
+        hash_key = self._hash(key)
+        if hash_key in self.cache:
+            self.cache.move_to_end(hash_key)
+            return self.cache[hash_key]
         return None
 
-    def put(self, text: str, masked_text: str) -> None:
-        key = self._hash(text)
-        self.cache[key] = masked_text
-        self.cache.move_to_end(key)
+    def put(self, key: Any, masked_text: Any) -> None:
+        hash_key = self._hash(key)
+        self.cache[hash_key] = masked_text
+        self.cache.move_to_end(hash_key)
         if len(self.cache) > self.capacity:
             self.cache.popitem(last=False)

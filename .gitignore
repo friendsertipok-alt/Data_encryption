@@ -1,7 +1,37 @@
+# Python
 .venv/
+venv/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Тесты и результаты
 test_files/
 test_results/
+stress_files/
+stress_results/
+smoke_results.txt
+report.txt
+test_out.txt
+
+# Данные и логи
 data/sessions.json
+data/dlp_gateway.db
+audit.log
+*.log
+
+# Исследования
 research_repos/
+
+# OS
+Thumbs.db
+.DS_Store

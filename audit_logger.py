@@ -1,7 +1,6 @@
 import json
 import os
 from datetime import datetime
-from user_profiles import get_user_department
 
 AUDIT_LOG_FILE = os.path.join(os.path.dirname(__file__), "audit.log")
 
@@ -9,14 +8,11 @@ def log_audit_event(user_token: str, original_text: str, anonymized_text: str, e
     """
     Записывает событие перехвата данных в журнал аудита.
     """
-    department = get_user_department(user_token) if user_token else "unknown"
-    
     # Считаем количество уникальных скрытых значений
     hidden_count = len(set(entity_map.values()))
     
     log_entry = {
         "timestamp": datetime.now().isoformat(),
-        "department": department,
         "token": user_token[:10] + "..." if user_token else "no_token",
         "action": "ANONYMIZED_REQUEST",
         "hidden_entities_count": hidden_count,

@@ -61,8 +61,64 @@ class PlainParser:
         return json.dumps(restored_data, ensure_ascii=False, indent=2).encode('utf-8')
 
     @staticmethod
+    def anonymize_tsv(file_bytes: bytes, anonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        reader = csv.reader(io.StringIO(text), delimiter='\t')
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter='\t')
+        for row in reader:
+            new_row = [anonymize_func(cell) if cell.strip() else cell for cell in row]
+            writer.writerow(new_row)
+        return output.getvalue().encode('utf-8')
+
+    @staticmethod
+    def deanonymize_tsv(file_bytes: bytes, deanonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        reader = csv.reader(io.StringIO(text), delimiter='\t')
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter='\t')
+        for row in reader:
+            new_row = [deanonymize_func(cell) if cell.strip() else cell for cell in row]
+            writer.writerow(new_row)
+        return output.getvalue().encode('utf-8')
+
+    @staticmethod
+    def anonymize_html(file_bytes: bytes, anonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        # Использование ElementTree / HTMLParser для сохранения тегов
+        try:
+            tree = ET.ElementTree(ET.fromstring(text))
+            for elem in tree.iter():
+                if elem.text and elem.text.strip():
+                    elem.text = anonymize_func(elem.text)
+                if elem.tail and elem.tail.strip():
+                    elem.tail = anonymize_func(elem.tail)
+            output = io.BytesIO()
+            tree.write(output, encoding='utf-8')
+            return output.getvalue()
+        except Exception:
+            # Откат к контекстной строковой обработке для невалидного HTML
+            return anonymize_func(text).encode('utf-8')
+
+    @staticmethod
+    def deanonymize_html(file_bytes: bytes, deanonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        try:
+            tree = ET.ElementTree(ET.fromstring(text))
+            for elem in tree.iter():
+                if elem.text and elem.text.strip():
+                    elem.text = deanonymize_func(elem.text)
+                if elem.tail and elem.tail.strip():
+                    elem.tail = deanonymize_func(elem.tail)
+            output = io.BytesIO()
+            tree.write(output, encoding='utf-8')
+            return output.getvalue()
+        except Exception:
+            return deanonymize_func(text).encode('utf-8')
+
+    @staticmethod
     def anonymize_xml(file_bytes: bytes, anonymize_func) -> bytes:
-        tree = ET.ElementTree(ET.fromstring(file_bytes.decode('utf-8')))
+        tree = ET.ElementTree(ET.fromstring(file_bytes.decode('utf-8', errors='ignore')))
         for elem in tree.iter():
             if elem.text and elem.text.strip():
                 elem.text = anonymize_func(elem.text)
@@ -77,7 +133,7 @@ class PlainParser:
 
     @staticmethod
     def deanonymize_xml(file_bytes: bytes, deanonymize_func) -> bytes:
-        tree = ET.ElementTree(ET.fromstring(file_bytes.decode('utf-8')))
+        tree = ET.ElementTree(ET.fromstring(file_bytes.decode('utf-8', errors='ignore')))
         for elem in tree.iter():
             if elem.text and elem.text.strip():
                 elem.text = deanonymize_func(elem.text)
@@ -89,3 +145,13 @@ class PlainParser:
         output = io.BytesIO()
         tree.write(output, encoding='utf-8', xml_declaration=True)
         return output.getvalue()
+
+    @staticmethod
+    def anonymize_rtf(file_bytes: bytes, anonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        return anonymize_func(text).encode('utf-8')
+
+    @staticmethod
+    def deanonymize_rtf(file_bytes: bytes, deanonymize_func) -> bytes:
+        text = file_bytes.decode('utf-8', errors='ignore')
+        return deanonymize_func(text).encode('utf-8')

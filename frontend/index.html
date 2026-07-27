@@ -3,90 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLP Gateway - Анонимизатор Данных</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>DLP Gateway</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo-container">
-                <div class="shield-icon">🛡️</div>
-                <h1>DLP Gateway</h1>
+    <!-- Animated background -->
+    <div class="bg-mesh">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="settings-overlay" id="settings-modal">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon" style="width: 20px; height: 20px; margin-right: 8px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> Настройки системы</h3>
+                <button class="close-btn" id="close-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg></button>
             </div>
-            <p class="subtitle">Безопасная передача конфиденциальных данных в LLM</p>
-            <div class="form-group" style="margin-top: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
-                <input type="text" id="api-key-input" value="test_key_123" placeholder="Ваш API Ключ (по умолчанию test_key_123)" required>
+            <div class="form-group">
+                <label for="api-key-input">Ключ авторизации (API Key)</label>
+                <input type="password" id="api-key-input" value="test_key_123" placeholder="Введите ключ доступа...">
+                <p class="help-text">Требуется для подключения к ядру DLP-шлюза.</p>
+            </div>
+            <button class="btn primary-btn btn-small" id="save-settings">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo-area">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; color: white;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <div class="logo-text">
+                    <h1>DLP</h1>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="open-settings" title="Настройки">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
             </div>
         </header>
-        
-        <main>
-            <div class="tabs">
-                <button class="tab-btn active" data-target="anonymize-tab">Защитить файл (Анонимизация)</button>
-                <button class="tab-btn" data-target="deanonymize-tab">Восстановить (Деанонимизация)</button>
+
+        <!-- Main Card -->
+        <main class="glass-panel">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-target="anonymize-tab">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    Маскирование
+                </button>
+                <button class="tab-btn" data-target="deanonymize-tab">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+                    Восстановление
+                </button>
+                <button class="tab-btn" data-target="history-tab" id="btn-refresh-history">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon" style="width: 18px; height: 18px; margin-right: 6px; vertical-align: middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    История сессий
+                </button>
             </div>
 
-            <section id="anonymize-tab" class="tab-content active">
-                <div class="card">
-                    <h2>Загрузите файл для защиты</h2>
-                    <p class="desc">Система найдёт и заменит ФИО, ИНН, номера карт, телефоны и другие данные на реалистичные фейки.</p>
-                    
-                    <form id="anonymize-form">
-                        <div class="form-group" style="margin-bottom: 1.5rem;">
-                            <label style="display: block; margin-bottom: 0.5rem;">Режим обработки:</label>
-                            <div style="display: flex; gap: 1rem; justify-content: center;">
-                                <label><input type="radio" name="mode" value="fake" checked> Реалистичные Фейки</label>
-                                <label><input type="radio" name="mode" value="tags"> Теги (&lt;PERSON_1&gt;)</label>
+            <div class="tab-panels-container">
+                <!-- TAB 1: Anonymize -->
+                <section id="anonymize-tab" class="tab-content active">
+                    <div class="tab-body">
+                        <div class="intro-text">
+                            <h2>Защита данных документов</h2>
+                            <p>Интеллектуальная подмена ПДн и чувствительной корпоративной информации.</p>
+                        </div>
+                        
+                        <form id="anonymize-form">
+                            <div class="controls-row">
+                                <label class="radio-card">
+                                    <input type="radio" name="mode" value="fake" checked>
+                                    <div class="radio-content">
+                                        <span class="radio-title">Реалистичные данные</span>
+                                        <span class="radio-desc">Фейковые ФИО, паспорта</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="mode" value="tags">
+                                    <div class="radio-content">
+                                        <span class="radio-title">Тегирование</span>
+                                        <span class="radio-desc">&lt;PERSON_1&gt;</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="form-group mb-large" style="margin-bottom: 15px;">
+                                <label for="group-id-input">Код Проекта / Групповой Сессии (Опционально)</label>
+                                <input type="text" id="group-id-input" placeholder="Задайте общий код (например PROJECT_2026) для связности пакета файлов..." class="mono-input">
+                            </div>
+
+                            <div class="input-mode-switcher" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <button type="button" class="mode-toggle-btn active" id="btn-anon-mode-file">📄 Загрузить Файл</button>
+                                <button type="button" class="mode-toggle-btn" id="btn-anon-mode-text">📝 Вставить Текст</button>
+                            </div>
+
+                            <!-- FILE ZONE -->
+                            <div id="anon-file-zone">
+                                <div class="upload-zone" id="drop-area-anon">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; height: 48px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <span class="upload-title">Перетащите файл сюда</span>
+                                    <span class="upload-subtitle">или кликните для выбора (DOCX, PDF, XLSX, 1C, Visio, GIF...)</span>
+                                    <input class="file-input" type="file" id="file-anon">
+                                </div>
+                                <div id="file-name-anon" class="file-name-display"></div>
+                            </div>
+
+                            <!-- TEXT ZONE -->
+                            <div id="anon-text-zone" class="hidden">
+                                <div class="form-group mb-large">
+                                    <label for="text-anon-input">Вставьте фрагмент текста для маскирования</label>
+                                    <textarea id="text-anon-input" placeholder="Вставьте любой фрагмент текста с ФИО, телефонами, адресами или документами..." style="width: 100%; height: 140px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 10px; color: white; padding: 12px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box;"></textarea>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn primary-btn" id="btn-anon" style="margin-top: 15px;">
+                                <span class="btn-text">Обработать</span>
+                                <div class="loader hidden"></div>
+                            </button>
+                        </form>
+                        
+                        <div id="anon-result" class="result-alert success-alert hidden">
+                            <div class="alert-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                            <div class="alert-content" style="width: 100%;">
+                                <h4>Обработка завершена</h4>
+                                <p>Трекинг-код сессии: <strong id="session-id-display" class="mono"></strong></p>
+                                <span class="alert-note">Сохраните код (или список кодов через запятую) для восстановления.</span>
+                                
+                                <div id="anon-text-output-container" class="hidden" style="margin-top: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-size: 12px; color: var(--text-muted);">Замаскированный результат:</span>
+                                        <button type="button" id="btn-copy-anon-text" class="btn secondary-btn" style="width: auto; padding: 4px 12px; font-size: 11px; margin: 0;">📋 Скопировать</button>
+                                    </div>
+                                    <textarea id="anon-text-output" readonly style="width: 100%; height: 120px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; color: #a5f3fc; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 6px; resize: vertical; box-sizing: border-box;"></textarea>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="file-drop-area" id="drop-area-anon">
-                            <span class="file-msg">Перетащите файл сюда или нажмите для выбора</span>
-                            <input class="file-input" type="file" id="file-anon" required>
-                        </div>
-                        <div id="file-name-anon" class="file-name-display"></div>
-
-                        <button type="submit" class="btn primary-btn" id="btn-anon">
-                            <span class="btn-text">Защитить и Скачать</span>
-                            <div class="spinner hidden"></div>
-                        </button>
-                    </form>
-                    
-                    <div id="anon-result" class="result-box hidden">
-                        <h3>✅ Файл успешно обработан!</h3>
-                        <p>ID Сессии: <strong id="session-id-display"></strong></p>
-                        <p class="warning-text">⚠️ Обязательно сохраните этот ID, он нужен для восстановления оригинального файла!</p>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <section id="deanonymize-tab" class="tab-content">
-                <div class="card">
-                    <h2>Восстановление оригинальных данных</h2>
-                    <p class="desc">Загрузите изменённый файл и введите ID сессии, чтобы вернуть настоящие данные на свои места.</p>
-                    
-                    <form id="deanonymize-form">
-                        <div class="form-group">
-                            <label for="session-id-input">ID Сессии:</label>
-                            <input type="text" id="session-id-input" placeholder="Например: 550e8400-e29b-41d4-a716-446655440000" required>
+                <!-- TAB 2: Deanonymize -->
+                <section id="deanonymize-tab" class="tab-content">
+                    <div class="tab-body">
+                        <div class="intro-text">
+                            <h2>Восстановление оригиналов</h2>
+                            <p>Инъекция настоящих данных на места безопасных заглушек.</p>
+                        </div>
+                        
+                        <form id="deanonymize-form">
+                            <div class="form-group mb-large">
+                                <label for="session-id-input">ID Сессии / Список через запятую / Код Проекта</label>
+                                <input type="text" id="session-id-input" placeholder="Введите Session ID, несколько ID через запятую или Код Проекта..." class="mono-input" required>
+                            </div>
+
+                            <div class="input-mode-switcher" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                <button type="button" class="mode-toggle-btn active" id="btn-deanon-mode-file">📄 Измененный Файл</button>
+                                <button type="button" class="mode-toggle-btn" id="btn-deanon-mode-text">📝 Отчет / Текст ИИ</button>
+                            </div>
+
+                            <!-- FILE ZONE -->
+                            <div id="deanon-file-zone">
+                                <div class="upload-zone" id="drop-area-deanon">
+                                    <div class="upload-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 48px; height: 48px;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                    </div>
+                                    <span class="upload-title">Перетащите измененный файл</span>
+                                    <span class="upload-subtitle">или кликните для обзора</span>
+                                    <input class="file-input" type="file" id="file-deanon">
+                                </div>
+                                <div id="file-name-deanon" class="file-name-display"></div>
+                            </div>
+
+                            <!-- TEXT ZONE -->
+                            <div id="deanon-text-zone" class="hidden">
+                                <div class="form-group mb-large">
+                                    <label for="text-deanon-input">Вставьте замаскированный текст или отчёт ИИ</label>
+                                    <textarea id="text-deanon-input" placeholder="Вставьте замаскированный текст или сгенерированный отчёт ИИ с фейками..." style="width: 100%; height: 140px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 10px; color: white; padding: 12px; font-family: inherit; font-size: 13px; resize: vertical; box-sizing: border-box;"></textarea>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn secondary-btn" id="btn-deanon" style="margin-top: 15px;">
+                                <span class="btn-text">Восстановить Исходник</span>
+                                <div class="loader hidden"></div>
+                            </button>
+                        </form>
+
+                        <div id="deanon-result-text" class="result-alert success-alert hidden" style="margin-top: 15px;">
+                            <div class="alert-content" style="width: 100%;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h4>Восстановленный оригинал:</h4>
+                                    <button type="button" id="btn-copy-deanon-text" class="btn secondary-btn" style="width: auto; padding: 4px 12px; font-size: 11px; margin: 0;">📋 Скопировать</button>
+                                </div>
+                                <textarea id="deanon-text-output" readonly style="width: 100%; height: 120px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: 8px; color: #a5f3fc; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 6px; resize: vertical; box-sizing: border-box;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: History & Projects -->
+                <section id="history-tab" class="tab-content">
+                    <div class="tab-body">
+                        <div class="intro-text" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h2>История сессий и проектов</h2>
+                                <p>Выделите галочками сессии для объединения при восстановлении отчетов ИИ.</p>
+                            </div>
+                            <button class="btn secondary-btn" id="btn-use-selected-sessions" style="width: auto; padding: 10px 18px; font-size: 13px; margin: 0;">
+                                Использовать выбранные (<span id="selected-count">0</span>)
+                            </button>
                         </div>
 
-                        <div class="file-drop-area" id="drop-area-deanon">
-                            <span class="file-msg">Перетащите защищенный файл сюда или нажмите</span>
-                            <input class="file-input" type="file" id="file-deanon" required>
+                        <div class="history-table-container" style="margin-top: 15px; max-height: 350px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(0,0,0,0.25);">
+                            <table class="history-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--border-color); background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                                        <th style="padding: 12px;"><input type="checkbox" id="select-all-sessions"></th>
+                                        <th style="padding: 12px;">Файл</th>
+                                        <th style="padding: 12px;">Проект / Группа</th>
+                                        <th style="padding: 12px;">Сущностей</th>
+                                        <th style="padding: 12px;">Дата</th>
+                                        <th style="padding: 12px;">Session ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body">
+                                    <tr><td colspan="6" style="padding: 20px; text-align: center; color: var(--text-muted);">Загрузка истории...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div id="file-name-deanon" class="file-name-display"></div>
-
-                        <button type="submit" class="btn secondary-btn" id="btn-deanon">
-                            <span class="btn-text">Восстановить Оригинал</span>
-                            <div class="spinner hidden"></div>
-                        </button>
-                    </form>
-                </div>
-            </section>
+                    </div>
+                </section>
+            </div>
         </main>
+        
+        <footer>
+            
+        </footer>
     </div>
     
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>

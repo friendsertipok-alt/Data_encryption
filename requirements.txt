@@ -1,0 +1,33 @@
+# DLP Gateway - Python Dependencies
+# Веб-фреймворк
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+
+# DLP / NLP ядро
+presidio-analyzer>=2.2.0
+presidio-anonymizer>=2.2.0
+spacy>=3.6.0
+natasha>=1.6.0
+
+# Генерация фейков и морфология
+faker>=19.0.0
+pymorphy3>=2.0.0
+pymorphy3-dicts-ru>=2.4.0
+
+# Работа с документами
+python-docx>=0.8.11
+openpyxl>=3.1.0
+xlrd>=2.0.0
+python-pptx>=0.6.21
+pymupdf>=1.23.0
+
+# OCR (для изображений и сканированных PDF)
+pytesseract>=0.3.10
+pillow>=10.0.0
+
+# Шифрование
+cryptography>=41.0.0
+
+# HTTP-клиент (для тестов)
+httpx>=0.24.0

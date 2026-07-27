@@ -91,33 +91,53 @@ class DlpDetector:
             score_threshold=0.9
         )
         
-        # Заменяем Regex находки справа налево
-        regex_results.sort(key=lambda x: x.start, reverse=True)
+        # Фильтруем пересечения regex находок (оставляем самые длинные и непересекающиеся)
+        filtered_regex = []
+        regex_results.sort(key=lambda x: (x.end - x.start), reverse=True)
         for res in regex_results:
             original_value = anonymized_text[res.start:res.end]
             
+            # Валидация номеров банковских карт по алгоритму Луна перед отбором
+            if res.entity_type == "CREDIT_CARD" and not self._is_luhn_valid(original_value):
+                continue
+                
+            overlap = any(max(res.start, f.start) < min(res.end, f.end) for f in filtered_regex)
+            if not overlap:
+                filtered_regex.append(res)
+                
+        # Заменяем Regex находки справа налево
+        filtered_regex.sort(key=lambda x: x.start, reverse=True)
+        for res in filtered_regex:
+            original_value = anonymized_text[res.start:res.end]
+                
             # Проверка, есть ли уже этот оригинал в мапе (для Canonical Mapping)
             token = self._get_existing_token(original_value, entity_map)
             if not token:
                 if mode == 'tags':
                     count = sum(1 for k in entity_map.keys() if k.startswith(f"<{res.entity_type}_")) + 1
                     token = f"<{res.entity_type}_{count}>"
-                    entity_map[token] = original_value
-                    local_entity_map[token] = original_value
                 else:
                     token = self.faker_engine.generate_fake(res.entity_type, original_value)
-                    entity_map[token] = original_value
-                    local_entity_map[token] = original_value
+                    attempts = 0
+                    while (token == original_value or token in entity_map) and attempts < 10:
+                        token = self.faker_engine.generate_fake(res.entity_type, original_value)
+                        attempts += 1
+                        
+                entity_map[token] = original_value
+                local_entity_map[token] = original_value
                 
             anonymized_text = anonymized_text[:res.start] + token + anonymized_text[res.end:]
             
         # --- PASS 2: NLP ---
-        nlp_results = self.nlp_analyzer.analyze(
-            text=anonymized_text,
-            entities=self.nlp_entities,
-            language=lang,
-            score_threshold=0.6
-        )
+        if re.search(r'[a-zA-Zа-яА-ЯёЁ]', anonymized_text):
+            nlp_results = self.nlp_analyzer.analyze(
+                text=anonymized_text,
+                entities=self.nlp_entities,
+                language=lang,
+                score_threshold=0.6
+            )
+        else:
+            nlp_results = []
         
         # Фильтруем NLP результаты (удаляем пересечения с нашими уже вставленными токенами)
         # NLP может попытаться заменить кусок фейка, если он выглядит как настоящее имя
@@ -209,6 +229,21 @@ class DlpDetector:
         entity_map[token] = original_value
         local_entity_map[token] = original_value
         return token
+
+    def _is_luhn_valid(self, number_str: str) -> bool:
+        """Проверка номера банковской карты по алгоритму Луна"""
+        digits = [int(c) for c in number_str if c.isdigit()]
+        if len(digits) < 13 or len(digits) > 19:
+            return False
+        checksum = 0
+        reverse_digits = digits[::-1]
+        for i, d in enumerate(reverse_digits):
+            if i % 2 == 1:
+                d *= 2
+                if d > 9:
+                    d -= 9
+            checksum += d
+        return checksum % 10 == 0
 
     def deanonymize(self, text: str, entity_map: Dict[str, str]) -> str:
         result = text

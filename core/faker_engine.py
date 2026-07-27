@@ -2,6 +2,7 @@ from typing import Dict, Optional
 from faker import Faker
 import pymorphy3
 import random
+import re
 
 class FakerEngine:
     """
@@ -33,15 +34,22 @@ class FakerEngine:
             check = str(self.fake_ru.random_number(digits=2, fix_len=True))
             return f"{parts[0]}-{parts[1]}-{parts[2]} {check}"
         elif entity_type == "PASSPORT_RU":
-            parts = re.split(r'[-\s]', original_value)
-            if len(parts) >= 2:
-                # Серия и номер с сохранением формата
-                return f"{self.fake_ru.random_number(digits=4, fix_len=True)} {self.fake_ru.random_number(digits=6, fix_len=True)}"
-            return str(self.fake_ru.random_number(digits=10, fix_len=True))
+            fake_series = self.fake_ru.random_number(digits=4, fix_len=True)
+            fake_num = self.fake_ru.random_number(digits=6, fix_len=True)
+            fake_val = f"{fake_series} {fake_num}"
+            if fake_val == original_value:
+                fake_val = f"{fake_series} {int(fake_num)+1:06d}"
+            return fake_val
         elif entity_type == "BANK_ACCOUNT_RU":
             return "4" + str(self.fake_ru.random_number(digits=19, fix_len=True))
         elif entity_type == "CREDIT_CARD":
             return self.fake_ru.credit_card_number()
+        elif entity_type == "DRIVER_LICENSE_RU":
+            return f"{self.fake_ru.random_number(digits=2, fix_len=True)} {self.fake_ru.random_number(digits=2, fix_len=True)} {self.fake_ru.random_number(digits=6, fix_len=True)}"
+        elif entity_type == "OMS_RU":
+            return str(self.fake_ru.random_number(digits=16, fix_len=True))
+        elif entity_type == "ADDRESS_RU":
+            return f"г. {self.fake_ru.city()}, ул. {self.fake_ru.street_name()}, д. {random.randint(1, 100)}, кв. {random.randint(1, 150)}"
         
         # --- ТРАНСПОРТ (РФ) ---
         elif entity_type.startswith("VEHICLE_"):
@@ -81,6 +89,8 @@ class FakerEngine:
             return self.fake_ru.email()
         elif entity_type == "RU_ORGANIZATION":
             return self.fake_ru.company()
+        elif entity_type == "RU_LOCATION":
+            return self.fake_ru.city()
             
         return f"[{entity_type}_{random.randint(1000, 9999)}]"
 

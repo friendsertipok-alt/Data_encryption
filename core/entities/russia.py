@@ -2,14 +2,14 @@ import re
 
 # Россия: Регулярные выражения для поиска конфиденциальных данных
 
-# Паспорт РФ (серия и номер: 4 цифры + пробел + 6 цифр)
-PASSPORT_RU_REGEX = re.compile(r'\b\d{4}\s*[-]?\s*\d{6}\b')
+# Паспорт РФ (серия 4 цифры + опциональный №/N/- + 6 цифр номера)
+PASSPORT_RU_REGEX = re.compile(r'\b\d{2}\s*\d{2}\s*(?:№|N|-)?\s*\d{6}\b', re.IGNORECASE)
 
 # Загранпаспорт РФ (2 цифры + 7 цифр)
 INTL_PASSPORT_RU_REGEX = re.compile(r'\b\d{2}\s*\d{7}\b')
 
-# ИНН (10 или 12 цифр)
-INN_RU_REGEX = re.compile(r'\b\d{10}(?:\d{2})?\b')
+# ИНН (10 или 12 цифр) — с контекстным ключевым словом для снижения ложных срабатываний
+INN_RU_REGEX = re.compile(r'(?:ИНН|инн|INN|Инн)[:\s№]*?(\d{10}(?:\d{2})?)', re.IGNORECASE)
 
 # СНИЛС (123-456-789 12 или 12345678912)
 SNILS_RU_REGEX = re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{2}\b')
@@ -17,8 +17,8 @@ SNILS_RU_REGEX = re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{2}\b')
 # ОГРН (13 цифр) и ОГРНИП (15 цифр)
 OGRN_RU_REGEX = re.compile(r'\b\d{13}(?:\d{2})?\b')
 
-# КПП (9 цифр)
-KPP_RU_REGEX = re.compile(r'\b\d{9}\b')
+# КПП (9 цифр) — только при наличии ключевого слова "КПП"
+KPP_RU_REGEX = re.compile(r'(?:КПП|кпп|Кпп)[:\s№]*?(\d{9})', re.IGNORECASE)
 
 # Номер банковского счёта (20 цифр, в РФ начинается на 4)
 BANK_ACCOUNT_RU_REGEX = re.compile(r'\b4\d{19}\b')
@@ -30,10 +30,22 @@ BIK_RU_REGEX = re.compile(r'\b04\d{7}\b')
 CREDIT_CARD_REGEX = re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4,7}\b')
 
 # Мобильные телефоны РФ
-PHONE_RU_REGEX = re.compile(r'\b(?:\+7|8)[-\s]?\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{2}[-\s]?\d{2}\b')
+PHONE_RU_REGEX = re.compile(r'(?:(?<=\s)|(?<=\b)|^)(?:\+7|8)[-\s]?\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{2}[-\s]?\d{2}\b')
+
+# Водительское удостоверение РФ (10 символов: 2 цифры + 2 цифры/буквы + 6 цифр)
+DRIVER_LICENSE_RU_REGEX = re.compile(r'\b\d{2}\s*(?:\d{2}|[А-ЯA-Z]{2})\s*\d{6}\b', re.IGNORECASE)
+
+# Полис ОМС единого образца (16 цифр) — только при наличии ключевых слов
+OMS_RU_REGEX = re.compile(r'(?:ОМС|полис|страхов)[:\s№]*?(\d{16})', re.IGNORECASE)
+
+# Адреса проживания РФ (город, улица, дом, квартира)
+ADDRESS_RU_REGEX = re.compile(
+    r'\b(?:г\.|пос\.|с\.|ст-ца|д\.|ул\.|пер\.|пр-кт|проспект|бул\.|бульвар|наб\.|набережная)\s+[А-ЯЁа-яёA-Za-z0-9\-]+'
+    r'(?:\s*,\s*(?:г\.|пос\.|с\.|д\.|ул\.|пер\.|пр-кт|кв\.|корп\.|стр\.)\s*[А-ЯЁа-яёA-Za-z0-9\-]+)+',
+    re.IGNORECASE
+)
 
 # --- ТРАНСПОРТНЫЕ СРЕДСТВА ---
-# Регулярки для номерных знаков (используются кириллические буквы А, В, Е, К, М, Н, О, Р, С, Т, У, Х, которые имеют аналоги в латинице)
 VALID_CHARS = r'[АВЕКМНОРСТУХA-Z]' 
 
 # 1. Частные и коммерческие легковые/грузовые (А 123 ВС 77 / A 123 BC 777)
@@ -63,6 +75,9 @@ RUSSIA_PATTERNS = {
     "BIK_RU": BIK_RU_REGEX,
     "CREDIT_CARD": CREDIT_CARD_REGEX,
     "PHONE_RU": PHONE_RU_REGEX,
+    "DRIVER_LICENSE_RU": DRIVER_LICENSE_RU_REGEX,
+    "OMS_RU": OMS_RU_REGEX,
+    "ADDRESS_RU": ADDRESS_RU_REGEX,
     "VEHICLE_PRIVATE_RU": VEHICLE_PRIVATE_RU_REGEX,
     "VEHICLE_TAXI_BUS_RU": VEHICLE_TAXI_BUS_RU_REGEX,
     "VEHICLE_TRAILER_RU": VEHICLE_TRAILER_RU_REGEX,
